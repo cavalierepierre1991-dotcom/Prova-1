@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Sky Rush 3D — Demo</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07101d;font-family:Arial,sans-serif;color:white;touch-action:none}
+canvas{display:block;width:100%;height:100%;background:linear-gradient(#68b9ff 0%,#bfe9ff 43%,#07152a 44%,#050914 100%)}
+#ui{position:fixed;inset:0;pointer-events:none}
+.top{display:flex;justify-content:space-between;padding:calc(env(safe-area-inset-top) + 14px) 16px 0;font-weight:900;text-shadow:0 2px 8px #000}
+.badge{background:#081426bb;border:1px solid #ffffff44;border-radius:14px;padding:8px 12px;backdrop-filter:blur(8px)}
+#hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;background:#071426dd;border:1px solid #ffffff44;border-radius:22px;padding:18px 22px;max-width:310px;transition:.4s}
+#hint b{font-size:25px}.small{font-size:13px;opacity:.8;line-height:1.4;margin-top:8px}
+#start{pointer-events:auto;margin-top:14px;border:0;border-radius:16px;padding:13px 24px;background:linear-gradient(90deg,#6b5cff,#b64cff);color:white;font-size:17px;font-weight:900}
+#touch{position:absolute;inset:0;display:none;pointer-events:auto}
+#joystick{position:absolute;left:24px;bottom:34px;width:118px;height:118px;border:2px solid #ffffff55;background:#08142666;border-radius:50%}
+#stick{position:absolute;width:50px;height:50px;left:32px;top:32px;border-radius:50%;background:#ffffffaa;box-shadow:0 0 18px #fff8}
+#boost{position:absolute;right:25px;bottom:42px;width:88px;height:88px;border-radius:50%;border:2px solid #ffffff66;background:linear-gradient(145deg,#ff8b32aa,#ff2f78aa);color:white;font-weight:900}
+#gameover{display:none;pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(330px,88vw);text-align:center;background:#071426ee;border:1px solid #ffffff44;border-radius:24px;padding:24px}
+#gameover h1{margin:0 0 8px;font-size:34px}
+#again{border:0;border-radius:15px;padding:12px 22px;background:#6b5cff;color:#fff;font-weight:900;font-size:16px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div class="top"><div class="badge">🚀 SKY RUSH</div><div class="badge">DIST <span id="dist">0</span> m</div></div>
+  <div id="hint"><b>VOLO LIBERO</b><div class="small">Trascina il dito per muovere il personaggio in ogni direzione. Evita gli ostacoli e vola più lontano.</div><button id="start">INIZIA A VOLARE</button></div>
+  <div id="touch"><div id="joystick"><div id="stick"></div></div><button id="boost">BOOST</button></div>
+  <div id="gameover"><h1>💥 IMPATTO!</h1><div class="small">Hai percorso <b id="finalDist">0</b> metri.</div><button id="again">RIPROVA</button></div>
+</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+let W,H,dpr; function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)} addEventListener('resize',resize);resize();
+let running=false,gameOver=false,px=0,py=0,vx=0,vy=0,z=0,dist=0,boost=0;
+let obstacles=[],stars=[],last=0,spawn=0,pid=null,joy={x:0,y:0};
+for(let i=0;i<100;i++)stars.push({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()*1+.05,s:Math.random()*2+1});
+function reset(){running=true;gameOver=false;px=py=vx=vy=z=dist=boost=0;obstacles=[];spawn=0;document.getElementById('hint').style.display='none';document.getElementById('gameover').style.display='none';document.getElementById('touch').style.display='block';last=performance.now();requestAnimationFrame(loop)}
+function project(x,y,zz){let scale=1/(zz+.12), cx=W/2+x*W*.58*scale, cy=H*.53+y*H*.58*scale; return [cx,cy,scale]}
+function spawnObs(){let count=Math.random()<.22?2:1;for(let i=0;i<count;i++)obstacles.push({x:Math.random()*1.7-.85,y:Math.random()*1.3-.65,z:1.05+i*.06,r:.055+Math.random()*.045,type:Math.random()<.5?'rock':'ring'})}
+function drawBackground(t){
+  let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#66baff');g.addColorStop(.46,'#c8efff');g.addColorStop(.47,'#102846');g.addColorStop(1,'#030712');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  // distant sun
+  ctx.beginPath();ctx.arc(W*.78,H*.18,55,0,7);ctx.fillStyle='#fff8c7aa';ctx.fill();
+  // speed stars
+  for(const s of stars){s.z-=.0018;if(s.z<.03){s.z=1;s.x=Math.random()*2-1;s.y=Math.random()*2-1}let a=project(s.x,s.y,s.z),b=project(s.x,s.y,s.z+.045);ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=s.s*a[2];ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()}
+  // horizon glow
+  ctx.fillStyle='rgba(80,180,255,.16)';ctx.fillRect(0,H*.45,W,3);
+}
+function drawPlayer(){
+  let x=W/2+px*W*.27,y=H*.55+py*H*.22;
+  ctx.save();ctx.translate(x,y);ctx.rotate(vx*.18);
+  ctx.shadowBlur=28;ctx.shadowColor='#7be8ff';
+  ctx.fillStyle='#e8f7ff';ctx.beginPath();ctx.moveTo(0,-34);ctx.lineTo(15,16);ctx.lineTo(0,27);ctx.lineTo(-15,16);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#6b5cff';ctx.beginPath();ctx.moveTo(-10,5);ctx.lineTo(-42,24);ctx.lineTo(-7,19);ctx.lineTo(0,10);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(10,5);ctx.lineTo(42,24);ctx.lineTo(7,19);ctx.lineTo(0,10);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#ff8c3a';ctx.beginPath();ctx.moveTo(-7,21);ctx.lineTo(0,48+Math.random()*8);ctx.lineTo(7,21);ctx.closePath();ctx.fill();ctx.restore();
+}
+function drawObstacle(o){
+  let [x,y,s]=project(o.x-px*.55,o.y-py*.45,o.z);
+  let rr=o.r*W*.7*s;
+  ctx.save();ctx.translate(x,y);ctx.shadowBlur=18;ctx.shadowColor=o.type==='ring'?'#ff4c91':'#8e6cff';
+  if(o.type==='ring'){ctx.strokeStyle='#ff5b9a';ctx.lineWidth=Math.max(4,rr*.18);ctx.beginPath();ctx.arc(0,0,rr,0,7);ctx.stroke();ctx.strokeStyle='#ffb3d0';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,rr*.62,0,7);ctx.stroke()}
+  else{ctx.fillStyle='#6b7087';ctx.beginPath();for(let i=0;i<8;i++){let a=i*Math.PI/4,rad=rr*(.75+Math.sin(i*9.3)*.25);let xx=Math.cos(a)*rad,yy=Math.sin(a)*rad;(i?ctx.lineTo:ctx.moveTo).call(ctx,xx,yy)}ctx.closePath();ctx.fill()}
+  ctx.restore();
+}
+function loop(t){if(!running)return;let dt=Math.min((t-last)/16.67,2);last=t;z+=.018*dt*(boost?1.8:1);dist+=.55*dt*(boost?1.8:1);document.getElementById('dist').textContent=Math.floor(dist);
+  px+=vx*.025*dt;py+=vy*.025*dt;vx*=.92;vy*=.92;
+  spawn-=dt;if(spawn<=0){spawnObs();spawn=18+Math.random()*18}
+  for(const o of obstacles)o.z-=.016*dt*(boost?1.6:1);
+  obstacles=obstacles.filter(o=>o.z>-.05);
+  for(const o of obstacles){let dx=o.x-(px*.55),dy=o.y-(py*.45),d=Math.hypot(dx,dy);if(o.z<.14&&d<o.r+.08){endGame();return}}
+  drawBackground(t);obstacles.slice().sort((a,b)=>b.z-a.z).forEach(drawObstacle);drawPlayer();requestAnimationFrame(loop)}
+function endGame(){running=false;gameOver=true;document.getElementById('touch').style.display='none';document.getElementById('gameover').style.display='block';document.getElementById('finalDist').textContent=Math.floor(dist)}
+document.getElementById('start').onclick=reset;document.getElementById('again').onclick=reset;
+function setJoy(e){let r=document.getElementById('joystick').getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),m=Math.min(Math.hypot(x,y),45);let a=Math.atan2(y,x);joy.x=Math.cos(a)*m/45;joy.y=Math.sin(a)*m/45;document.getElementById('stick').style.transform=`translate(${joy.x*28}px,${joy.y*28}px)`;vx=joy.x;vy=joy.y}
+const touch=document.getElementById('touch');touch.addEventListener('pointerdown',e=>{if(e.target.id==='boost')return;pid=e.pointerId;touch.setPointerCapture(pid);setJoy(e)});touch.addEventListener('pointermove',e=>{if(e.pointerId===pid)setJoy(e)});touch.addEventListener('pointerup',e=>{if(e.pointerId===pid){pid=null;joy.x=joy.y=0;document.getElementById('stick').style.transform='translate(0,0)'}});
+document.getElementById('boost').addEventListener('pointerdown',e=>{e.stopPropagation();boost=1});document.getElementById('boost').addEventListener('pointerup',e=>{boost=0});
+</script>
+</body>
+</html>
