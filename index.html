@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sky Rush V2</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b15;font-family:Arial,sans-serif;color:white;touch-action:none}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#091426}
+#hud{position:fixed;left:18px;top:16px;width:190px;padding:14px 16px;border:1px solid #ffffff38;border-radius:16px;background:#07111dcc;backdrop-filter:blur(8px);box-shadow:0 8px 30px #0008}
+.stat{margin:4px 0 12px}.label{font-size:11px;letter-spacing:1.5px;color:#b9c8da}.value{font-size:23px;font-weight:700}
+#boost{position:fixed;right:22px;bottom:24px;width:108px;height:108px;border-radius:50%;border:2px solid #9bdcff99;background:#1c76b833;box-shadow:0 0 30px #39aaff66,inset 0 0 30px #48bfff22;color:#fff;font-weight:800;font-size:15px;letter-spacing:1px}
+#boost:active{transform:scale(.94);background:#49bfff55}
+#pause{position:fixed;right:18px;top:16px;width:52px;height:52px;border:1px solid #ffffff44;border-radius:14px;background:#07111dcc;color:#fff;font-size:20px}
+#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);padding:9px 15px;border-radius:20px;background:#07111daa;border:1px solid #ffffff22;color:#d8e8fa;font-size:12px;pointer-events:none}
+#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#02061188,#020611cc),url("sky-rush-v2.png") center/cover}
+.panel{text-align:center;max-width:650px;padding:30px}.title{font-family:Georgia,serif;font-size:clamp(48px,9vw,94px);letter-spacing:2px;text-shadow:0 4px 30px #000}
+.title span{display:block;font-size:.32em;letter-spacing:9px;color:#a9dcff;margin-top:-8px}
+.sub{font-size:16px;color:#d9e9f7;margin:18px}
+#play{padding:16px 38px;border:1px solid #9cddff88;border-radius:30px;background:#1c76b855;color:white;font-size:18px;font-weight:800;box-shadow:0 0 35px #2aaaff44}
+#gameover{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#020611aa}
+.card{background:#07111eee;border:1px solid #ffffff33;border-radius:22px;padding:30px;text-align:center;min-width:280px}
+.card h2{font-family:Georgia,serif;font-size:34px;margin:0 0 14px}
+.card button{padding:13px 26px;border-radius:25px;border:1px solid #8ed9ff66;background:#146da644;color:#fff;font-weight:700}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="stat"><div class="label">PUNTEGGIO</div><div id="score" class="value">0</div></div>
+  <div class="stat"><div class="label">DISTANZA</div><div id="dist" class="value">0 m</div></div>
+  <div class="stat"><div class="label">CRISTALLI</div><div id="crystals" class="value">0</div></div>
+</div>
+<button id="pause">Ⅱ</button>
+<button id="boost">⚡<br>BOOST</button>
+<div id="hint">Trascina il dito per volare • raccogli i cristalli • evita gli ostacoli</div>
+
+<div id="start">
+ <div class="panel">
+   <div class="title">SKY RUSH<span>V2</span></div>
+   <div class="sub">Vola. Schiva. Supera i tuoi limiti.</div>
+   <button id="play">INIZIA LA PARTITA</button>
+ </div>
+</div>
+
+<div id="gameover"><div class="card">
+ <h2>Volo concluso</h2><div id="final"></div><br>
+ <button id="retry">RIPROVA</button>
+</div></div>
+
+<script>
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+let W,H,dpr,playing=false,paused=false,last=0,t=0,score=0,dist=0,cr=0,boost=100;
+let player={x:.5,y:.58,tx:.5,ty:.58,vx:0,vy:0};
+let objects=[],spawn=0,boosting=false;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+
+function reset(){score=0;dist=0;cr=0;boost=100;objects=[];player={x:.5,y:.58,tx:.5,ty:.58,vx:0,vy:0};t=0;spawn=0;boosting=false}
+function start(){reset();playing=true;paused=false;document.getElementById('start').style.display='none';document.getElementById('gameover').style.display='none';last=performance.now();requestAnimationFrame(loop)}
+function end(){playing=false;document.getElementById('final').innerHTML=`<b>${Math.floor(score).toLocaleString('it-IT')}</b> punti<br>${Math.floor(dist)} m • ${cr} cristalli`;document.getElementById('gameover').style.display='flex'}
+document.getElementById('play').onclick=start;document.getElementById('retry').onclick=start;
+document.getElementById('pause').onclick=()=>{if(playing)paused=!paused};
+
+function pointer(e){if(!playing)return;let x=e.clientX/W,y=e.clientY/H;player.tx=Math.max(.08,Math.min(.92,x));player.ty=Math.max(.18,Math.min(.86,y))}
+addEventListener('pointermove',pointer);
+addEventListener('pointerdown',e=>{if(e.target===document.getElementById('boost'))return;pointer(e)});
+document.getElementById('boost').addEventListener('pointerdown',e=>{e.preventDefault();boosting=true});
+addEventListener('pointerup',()=>boosting=false);
+addEventListener('pointercancel',()=>boosting=false);
+
+function spawnObj(){
+ let type=Math.random()<.55?'crystal':'rock';
+ objects.push({type,x:.08+Math.random()*.84,y:.12+Math.random()*.72,z:1,r:type==='crystal'?13:25,rot:Math.random()*6.2});
+}
+function bg(){
+ let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#071b3a');g.addColorStop(.55,'#3b6f9c');g.addColorStop(1,'#0b1625');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // sun
+ let sx=W*.72,sy=H*.18;let rg=ctx.createRadialGradient(sx,sy,5,sx,sy,170);rg.addColorStop(0,'#fffbd1aa');rg.addColorStop(1,'#fff0aa00');ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
+ // cloud bands
+ ctx.globalAlpha=.22;for(let i=0;i<9;i++){let x=((i*250-t*.025)% (W+400))-200;let y=H*(.18+(i%5)*.12);ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,y,150,28,0,0,7);ctx.ellipse(x+120,y+10,110,22,0,0,7);ctx.fill()}ctx.globalAlpha=1;
+}
+function drawObjects(){
+ for(const o of objects){let s=.25+.75*(1-o.z);let x=o.x*W,y=o.y*H,rr=o.r*(.35+1.3*(1-o.z));
+   ctx.save();ctx.translate(x,y);ctx.rotate(o.rot);
+   if(o.type==='crystal'){ctx.shadowBlur=22;ctx.shadowColor='#65d9ff';ctx.fillStyle='#9ceeff';ctx.beginPath();ctx.moveTo(0,-rr);ctx.lineTo(rr*.55,0);ctx.lineTo(0,rr);ctx.lineTo(-rr*.55,0);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.globalAlpha=.7;ctx.fillRect(-2,-rr*.6,4,rr*1.2)}
+   else{ctx.shadowBlur=10;ctx.shadowColor='#000';ctx.fillStyle='#263443';ctx.beginPath();for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let rad=rr*(.7+Math.sin(i*4.2)*.18);ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad)}ctx.closePath();ctx.fill();ctx.strokeStyle='#65778b';ctx.stroke()}
+   ctx.restore();
+ }
+}
+function drawPlayer(){
+ let x=player.x*W,y=player.y*H;
+ ctx.save();ctx.translate(x,y);
+ if(boosting){ctx.shadowBlur=30;ctx.shadowColor='#4fd7ff';ctx.strokeStyle='#65dcff';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-12,20);ctx.lineTo(-40,70);ctx.moveTo(12,20);ctx.lineTo(40,70);ctx.stroke()}
+ // magic wings/trails
+ ctx.globalAlpha=.55;ctx.fillStyle='#49cfff';ctx.beginPath();ctx.moveTo(-8,18);ctx.lineTo(-70,55);ctx.lineTo(-20,8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(8,18);ctx.lineTo(70,55);ctx.lineTo(20,8);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
+ // cloak
+ ctx.fillStyle='#182238';ctx.beginPath();ctx.moveTo(-13,-4);ctx.lineTo(-35,38);ctx.lineTo(0,24);ctx.lineTo(35,38);ctx.lineTo(13,-4);ctx.closePath();ctx.fill();ctx.strokeStyle='#c6a55b';ctx.stroke();
+ // body/head
+ ctx.fillStyle='#b88761';ctx.beginPath();ctx.arc(0,-12,10,0,7);ctx.fill();
+ ctx.fillStyle='#202a38';ctx.fillRect(-9,-5,18,30);
+ ctx.fillStyle='#d4b06b';ctx.fillRect(-13,0,5,22);ctx.fillRect(8,0,5,22);
+ ctx.restore();
+}
+function loop(now){
+ if(!playing)return;let dt=Math.min(.033,(now-last)/1000);last=now;
+ if(!paused){
+   t+=dt;
+   let b=boosting&&boost>0;b?boost=Math.max(0,boost-dt*28):boost=Math.min(100,boost+dt*9);
+   let speed=(b?1.9:1)*.34;
+   player.x+=(player.tx-player.x)*dt*7;player.y+=(player.ty-player.y)*dt*7;
+   dist+=speed*dt*100;score+=speed*dt*120;
+   spawn-=dt;if(spawn<=0){spawn=b?.22:.42;spawnObj()}
+   for(let i=objects.length-1;i>=0;i--){let o=objects[i];o.z-=speed*dt*1.25;o.rot+=dt*1.5;if(o.z<0.02){
+      let px=player.x*W,py=player.y*H,ox=o.x*W,oy=o.y*H;
+      if(Math.hypot(px-ox,py-oy)<(o.r+28)*(1.2)){if(o.type==='crystal'){cr++;score+=250}else{if(!b){end();return}}}
+      objects.splice(i,1)
+   }}
+ }
+ bg();drawObjects();drawPlayer();
+ document.getElementById('score').textContent=Math.floor(score).toLocaleString('it-IT');
+ document.getElementById('dist').textContent=Math.floor(dist)+' m';
+ document.getElementById('crystals').textContent=cr;
+ requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>
