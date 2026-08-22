@@ -1,129 +1,99 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Sky Rush V2</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sky Rush V3 — Demo Ultimate</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b15;font-family:Arial,sans-serif;color:white;touch-action:none}
-#game{position:fixed;inset:0;width:100%;height:100%;display:block;background:#091426}
-#hud{position:fixed;left:18px;top:16px;width:190px;padding:14px 16px;border:1px solid #ffffff38;border-radius:16px;background:#07111dcc;backdrop-filter:blur(8px);box-shadow:0 8px 30px #0008}
-.stat{margin:4px 0 12px}.label{font-size:11px;letter-spacing:1.5px;color:#b9c8da}.value{font-size:23px;font-weight:700}
-#boost{position:fixed;right:22px;bottom:24px;width:108px;height:108px;border-radius:50%;border:2px solid #9bdcff99;background:#1c76b833;box-shadow:0 0 30px #39aaff66,inset 0 0 30px #48bfff22;color:#fff;font-weight:800;font-size:15px;letter-spacing:1px}
-#boost:active{transform:scale(.94);background:#49bfff55}
-#pause{position:fixed;right:18px;top:16px;width:52px;height:52px;border:1px solid #ffffff44;border-radius:14px;background:#07111dcc;color:#fff;font-size:20px}
-#hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);padding:9px 15px;border-radius:20px;background:#07111daa;border:1px solid #ffffff22;color:#d8e8fa;font-size:12px;pointer-events:none}
-#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#02061188,#020611cc),url("sky-rush-v2.png") center/cover}
-.panel{text-align:center;max-width:650px;padding:30px}.title{font-family:Georgia,serif;font-size:clamp(48px,9vw,94px);letter-spacing:2px;text-shadow:0 4px 30px #000}
-.title span{display:block;font-size:.32em;letter-spacing:9px;color:#a9dcff;margin-top:-8px}
-.sub{font-size:16px;color:#d9e9f7;margin:18px}
-#play{padding:16px 38px;border:1px solid #9cddff88;border-radius:30px;background:#1c76b855;color:white;font-size:18px;font-weight:800;box-shadow:0 0 35px #2aaaff44}
-#gameover{display:none;position:fixed;inset:0;align-items:center;justify-content:center;background:#020611aa}
-.card{background:#07111eee;border:1px solid #ffffff33;border-radius:22px;padding:30px;text-align:center;min-width:280px}
-.card h2{font-family:Georgia,serif;font-size:34px;margin:0 0 14px}
-.card button{padding:13px 26px;border-radius:25px;border:1px solid #8ed9ff66;background:#146da644;color:#fff;font-weight:700}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050b14;font-family:Arial,sans-serif;color:white;touch-action:none}
+#game{width:100%;height:100%;display:block}
+#hud{position:fixed;inset:0;pointer-events:none}
+.top{position:absolute;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-start;text-shadow:0 2px 8px #000}
+.score{font-size:42px;font-weight:800}.small{font-size:13px;opacity:.8}
+.stats{text-align:right;font-size:14px}.stats b{font-size:25px}
+.bar{position:absolute;top:17px;left:50%;transform:translateX(-50%);width:34%;height:12px;border:1px solid #9be8ff;border-radius:9px;background:#102637aa;overflow:hidden}
+.fill{height:100%;width:67%;background:linear-gradient(90deg,#22b9ff,#d9fbff);box-shadow:0 0 15px #22b9ff}
+.pause{position:absolute;right:18px;top:62px;width:48px;height:48px;border-radius:50%;border:1px solid #bcefff;background:#102436bb;color:white;font-size:20px}
+.controls{position:absolute;inset:0}.joy{position:absolute;left:22px;bottom:28px;width:145px;height:145px;border:1px solid #c9efff88;border-radius:50%;background:#07152266}
+.stick{position:absolute;left:47px;top:47px;width:51px;height:51px;border-radius:50%;background:#dbefffaa;border:1px solid white}
+.arrows{position:absolute;inset:0;font-size:22px;color:#d9f8ff;text-align:center;line-height:145px}.up{position:absolute;right:22px;bottom:220px;width:64px;height:64px;border-radius:50%;border:1px solid #8be8ff;background:#09263bcc;font-size:25px;color:white}
+.ability{position:absolute;right:25px;bottom:95px;width:86px;height:86px;border-radius:50%;border:2px solid #79dcff;background:#062641cc;box-shadow:0 0 25px #29bfff88;font-size:36px;color:#d9f7ff}
+.shield{position:absolute;right:39px;bottom:28px;width:55px;height:55px;border-radius:50%;border:1px solid #bdefff;background:#0b2033cc;color:white;font-size:25px}
+.hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:12px;opacity:.65}
+#start{position:fixed;inset:0;background:radial-gradient(circle at 50% 45%,#1a4c70 0,#07111d 52%,#02060b 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:5}
+#start h1{font-size:58px;margin:0;letter-spacing:3px;text-shadow:0 0 25px #3bd5ff}.sub{letter-spacing:6px;color:#54d8ff}
+button.play{margin-top:30px;padding:18px 54px;border-radius:12px;border:1px solid #9beeff;background:#0d4c72;color:white;font-size:23px;font-weight:bold;box-shadow:0 0 30px #2cc9ff55}
+#loading{position:absolute;bottom:18%;opacity:.65}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-
-<div id="hud">
-  <div class="stat"><div class="label">PUNTEGGIO</div><div id="score" class="value">0</div></div>
-  <div class="stat"><div class="label">DISTANZA</div><div id="dist" class="value">0 m</div></div>
-  <div class="stat"><div class="label">CRISTALLI</div><div id="crystals" class="value">0</div></div>
+<div id="start"><h1>SKY RUSH</h1><div class="sub">V3 — DEMO ULTIMATE</div><div style="margin-top:12px;opacity:.75">SIMULAZIONE DEL GIOCO FUTURO</div><button class="play" onclick="startGame()">GIOCA</button><div id="loading">3D • VOLO LIBERO • TOUCH • ABILITÀ</div></div>
+<div id="hud" style="display:none">
+ <div class="top"><div><div class="score" id="score">0</div><div class="small">PUNTEGGIO</div><div style="margin-top:12px">💎 120 &nbsp; 🪙 35</div></div><div class="stats">VELOCITÀ<br><b id="speed">245</b> km/h<br><span style="opacity:.7">DISTANZA <b id="dist">0.00</b> km</span></div></div>
+ <div class="bar"><div class="fill" id="fill"></div></div><button class="pause" onclick="togglePause()">Ⅱ</button>
+ <div class="controls"><div class="joy"><div class="arrows">▲<br><span style="font-size:30px">◀ ● ▶</span><br>▼</div><div class="stick" id="stick"></div></div><button class="up" ontouchstart="boost=true" ontouchend="boost=false">▲</button><button class="ability" ontouchstart="ability()">🪽</button><button class="shield">◇</button><div class="hint">Trascina il joystick per volare • usa 🪽 per lo scatto</div></div>
 </div>
-<button id="pause">Ⅱ</button>
-<button id="boost">⚡<br>BOOST</button>
-<div id="hint">Trascina il dito per volare • raccogli i cristalli • evita gli ostacoli</div>
-
-<div id="start">
- <div class="panel">
-   <div class="title">SKY RUSH<span>V2</span></div>
-   <div class="sub">Vola. Schiva. Supera i tuoi limiti.</div>
-   <button id="play">INIZIA LA PARTITA</button>
- </div>
-</div>
-
-<div id="gameover"><div class="card">
- <h2>Volo concluso</h2><div id="final"></div><br>
- <button id="retry">RIPROVA</button>
-</div></div>
-
+<script src="https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.min.js"></script>
 <script>
-const c=document.getElementById('game'),ctx=c.getContext('2d');
-let W,H,dpr,playing=false,paused=false,last=0,t=0,score=0,dist=0,cr=0,boost=100;
-let player={x:.5,y:.58,tx:.5,ty:.58,vx:0,vy:0};
-let objects=[],spawn=0,boosting=false;
-function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}
-addEventListener('resize',resize);resize();
-
-function reset(){score=0;dist=0;cr=0;boost=100;objects=[];player={x:.5,y:.58,tx:.5,ty:.58,vx:0,vy:0};t=0;spawn=0;boosting=false}
-function start(){reset();playing=true;paused=false;document.getElementById('start').style.display='none';document.getElementById('gameover').style.display='none';last=performance.now();requestAnimationFrame(loop)}
-function end(){playing=false;document.getElementById('final').innerHTML=`<b>${Math.floor(score).toLocaleString('it-IT')}</b> punti<br>${Math.floor(dist)} m • ${cr} cristalli`;document.getElementById('gameover').style.display='flex'}
-document.getElementById('play').onclick=start;document.getElementById('retry').onclick=start;
-document.getElementById('pause').onclick=()=>{if(playing)paused=!paused};
-
-function pointer(e){if(!playing)return;let x=e.clientX/W,y=e.clientY/H;player.tx=Math.max(.08,Math.min(.92,x));player.ty=Math.max(.18,Math.min(.86,y))}
-addEventListener('pointermove',pointer);
-addEventListener('pointerdown',e=>{if(e.target===document.getElementById('boost'))return;pointer(e)});
-document.getElementById('boost').addEventListener('pointerdown',e=>{e.preventDefault();boosting=true});
-addEventListener('pointerup',()=>boosting=false);
-addEventListener('pointercancel',()=>boosting=false);
-
-function spawnObj(){
- let type=Math.random()<.55?'crystal':'rock';
- objects.push({type,x:.08+Math.random()*.84,y:.12+Math.random()*.72,z:1,r:type==='crystal'?13:25,rot:Math.random()*6.2});
+let scene,camera,renderer,player,started=false,paused=false,boost=false,score=0,dist=0,t=0;
+const keys={}; let joy={x:0,y:0}, dragging=false;
+function startGame(){document.getElementById('start').style.display='none';document.getElementById('hud').style.display='block';init();}
+function init(){
+ scene=new THREE.Scene(); scene.fog=new THREE.FogExp2(0x87b9d6,.00045);
+ camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,4000);
+ renderer=new THREE.WebGLRenderer({canvas:document.getElementById('game'),antialias:true});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;
+ scene.background=new THREE.Color(0x79b6da);
+ scene.add(new THREE.HemisphereLight(0xdff7ff,0x31516c,2.1));
+ const sun=new THREE.DirectionalLight(0xffffff,3);sun.position.set(-300,500,200);sun.castShadow=true;scene.add(sun);
+ createWorld(); createPlayer(); addEvents(); animate();
 }
-function bg(){
- let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#071b3a');g.addColorStop(.55,'#3b6f9c');g.addColorStop(1,'#0b1625');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
- // sun
- let sx=W*.72,sy=H*.18;let rg=ctx.createRadialGradient(sx,sy,5,sx,sy,170);rg.addColorStop(0,'#fffbd1aa');rg.addColorStop(1,'#fff0aa00');ctx.fillStyle=rg;ctx.fillRect(0,0,W,H);
- // cloud bands
- ctx.globalAlpha=.22;for(let i=0;i<9;i++){let x=((i*250-t*.025)% (W+400))-200;let y=H*(.18+(i%5)*.12);ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(x,y,150,28,0,0,7);ctx.ellipse(x+120,y+10,110,22,0,0,7);ctx.fill()}ctx.globalAlpha=1;
-}
-function drawObjects(){
- for(const o of objects){let s=.25+.75*(1-o.z);let x=o.x*W,y=o.y*H,rr=o.r*(.35+1.3*(1-o.z));
-   ctx.save();ctx.translate(x,y);ctx.rotate(o.rot);
-   if(o.type==='crystal'){ctx.shadowBlur=22;ctx.shadowColor='#65d9ff';ctx.fillStyle='#9ceeff';ctx.beginPath();ctx.moveTo(0,-rr);ctx.lineTo(rr*.55,0);ctx.lineTo(0,rr);ctx.lineTo(-rr*.55,0);ctx.closePath();ctx.fill();ctx.fillStyle='#fff';ctx.globalAlpha=.7;ctx.fillRect(-2,-rr*.6,4,rr*1.2)}
-   else{ctx.shadowBlur=10;ctx.shadowColor='#000';ctx.fillStyle='#263443';ctx.beginPath();for(let i=0;i<7;i++){let a=i*Math.PI*2/7;let rad=rr*(.7+Math.sin(i*4.2)*.18);ctx.lineTo(Math.cos(a)*rad,Math.sin(a)*rad)}ctx.closePath();ctx.fill();ctx.strokeStyle='#65778b';ctx.stroke()}
-   ctx.restore();
+function mat(c,rough=1,emit=0){return new THREE.MeshStandardMaterial({color:c,roughness:rough,metalness:.15,emissive:emit?c:0,emissiveIntensity:emit});}
+function createWorld(){
+ // ocean/terrain
+ let ground=new THREE.Mesh(new THREE.PlaneGeometry(5000,5000),mat(0x2f6e73));ground.rotation.x=-Math.PI/2;ground.position.y=-120;scene.add(ground);
+ for(let i=0;i<42;i++){
+  let x=(Math.random()-.5)*1500,y=(Math.random()-.5)*650,z=-i*150-100;
+  let r=25+Math.random()*65;
+  let island=new THREE.Mesh(new THREE.CylinderGeometry(r,r*.55,35+Math.random()*60,9),mat(0x45685b));
+  island.position.set(x,y,z); island.rotation.y=Math.random()*3; island.castShadow=true;scene.add(island);
+  let top=new THREE.Mesh(new THREE.CylinderGeometry(r*.98,r*.98,5,9),mat(0x6f9a68));top.position.set(x,y+20,z);scene.add(top);
+  for(let j=0;j<4;j++){let tr=new THREE.Mesh(new THREE.ConeGeometry(5,18+Math.random()*20,7),mat(0x285b43));tr.position.set(x+(Math.random()-.5)*r,y+30,z+(Math.random()-.5)*r);scene.add(tr)}
  }
+ // floating crystals
+ for(let i=0;i<28;i++){let c=new THREE.Mesh(new THREE.OctahedronGeometry(5+Math.random()*5),mat(0x4ad7ff,.4,1));c.position.set((Math.random()-.5)*1000,(Math.random()-.5)*500,-300-Math.random()*3000);scene.add(c)}
 }
-function drawPlayer(){
- let x=player.x*W,y=player.y*H;
- ctx.save();ctx.translate(x,y);
- if(boosting){ctx.shadowBlur=30;ctx.shadowColor='#4fd7ff';ctx.strokeStyle='#65dcff';ctx.lineWidth=7;ctx.beginPath();ctx.moveTo(-12,20);ctx.lineTo(-40,70);ctx.moveTo(12,20);ctx.lineTo(40,70);ctx.stroke()}
- // magic wings/trails
- ctx.globalAlpha=.55;ctx.fillStyle='#49cfff';ctx.beginPath();ctx.moveTo(-8,18);ctx.lineTo(-70,55);ctx.lineTo(-20,8);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(8,18);ctx.lineTo(70,55);ctx.lineTo(20,8);ctx.closePath();ctx.fill();ctx.globalAlpha=1;
- // cloak
- ctx.fillStyle='#182238';ctx.beginPath();ctx.moveTo(-13,-4);ctx.lineTo(-35,38);ctx.lineTo(0,24);ctx.lineTo(35,38);ctx.lineTo(13,-4);ctx.closePath();ctx.fill();ctx.strokeStyle='#c6a55b';ctx.stroke();
- // body/head
- ctx.fillStyle='#b88761';ctx.beginPath();ctx.arc(0,-12,10,0,7);ctx.fill();
- ctx.fillStyle='#202a38';ctx.fillRect(-9,-5,18,30);
- ctx.fillStyle='#d4b06b';ctx.fillRect(-13,0,5,22);ctx.fillRect(8,0,5,22);
- ctx.restore();
+function createPlayer(){
+ player=new THREE.Group();
+ let body=new THREE.Mesh(new THREE.CapsuleGeometry(3.5,10,8,16),mat(0x26384b,.45));body.rotation.x=Math.PI/2;body.castShadow=true;player.add(body);
+ let head=new THREE.Mesh(new THREE.SphereGeometry(3.4,18,14),mat(0xd29a78));head.position.z=7;player.add(head);
+ let cape=new THREE.Mesh(new THREE.ConeGeometry(8,17,4),mat(0x17283d,.5));cape.rotation.x=-Math.PI/2;cape.position.z=-9;cape.scale.y=1.7;player.add(cape);
+ let wingMat=mat(0x8feaff,.3,1);
+ for(let s of [-1,1]){let w=new THREE.Mesh(new THREE.PlaneGeometry(22,6),wingMat);w.position.set(12*s,1,0);w.rotation.z=.25*s;player.add(w)}
+ player.position.set(0,0,5);scene.add(player);
 }
-function loop(now){
- if(!playing)return;let dt=Math.min(.033,(now-last)/1000);last=now;
+function addEvents(){
+ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+ addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+ const j=document.querySelector('.joy'),s=document.getElementById('stick');
+ function move(x,y){let r=j.getBoundingClientRect(),dx=x-(r.left+r.width/2),dy=y-(r.top+r.height/2);let m=Math.min(48,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);joy.x=Math.cos(a)*m/48;joy.y=Math.sin(a)*m/48;s.style.transform=`translate(${joy.x*45}px,${joy.y*45}px)`}
+ j.addEventListener('pointerdown',e=>{dragging=true;j.setPointerCapture(e.pointerId);move(e.clientX,e.clientY)});j.addEventListener('pointermove',e=>dragging&&move(e.clientX,e.clientY));j.addEventListener('pointerup',()=>{dragging=false;joy.x=joy.y=0;s.style.transform='translate(0,0)'});
+}
+function ability(){boost=true;setTimeout(()=>boost=false,900)}
+function togglePause(){paused=!paused}
+function animate(){
+ requestAnimationFrame(animate); if(!started){started=true}
  if(!paused){
-   t+=dt;
-   let b=boosting&&boost>0;b?boost=Math.max(0,boost-dt*28):boost=Math.min(100,boost+dt*9);
-   let speed=(b?1.9:1)*.34;
-   player.x+=(player.tx-player.x)*dt*7;player.y+=(player.ty-player.y)*dt*7;
-   dist+=speed*dt*100;score+=speed*dt*120;
-   spawn-=dt;if(spawn<=0){spawn=b?.22:.42;spawnObj()}
-   for(let i=objects.length-1;i>=0;i--){let o=objects[i];o.z-=speed*dt*1.25;o.rot+=dt*1.5;if(o.z<0.02){
-      let px=player.x*W,py=player.y*H,ox=o.x*W,oy=o.y*H;
-      if(Math.hypot(px-ox,py-oy)<(o.r+28)*(1.2)){if(o.type==='crystal'){cr++;score+=250}else{if(!b){end();return}}}
-      objects.splice(i,1)
-   }}
+  t+=.016; let v=boost?2.4:1.25; dist+=v*.016*.06; score+=Math.round(v);
+  let x=(joy.x+(keys.d?1:0)-(keys.a?1:0))*1.15, y=-(joy.y+(keys.s?1:0)-(keys.w?1:0))*1.0;
+  player.position.x+=x;player.position.y+=y;player.position.y=Math.max(-70,Math.min(210,player.position.y));
+  player.rotation.z=-x*.35;player.rotation.x=y*.22;player.rotation.y=-x*.15;
+  camera.position.lerp(new THREE.Vector3(player.position.x*.18,player.position.y+24,player.position.z+55),.08);
+  camera.lookAt(player.position.x,player.position.y,player.position.z-90);
+  document.getElementById('score').textContent=score.toLocaleString('it-IT');document.getElementById('speed').textContent=boost?420:245;document.getElementById('dist').textContent=dist.toFixed(2);
+  document.getElementById('fill').style.width=(55+Math.sin(t*.5)*12)+'%';
  }
- bg();drawObjects();drawPlayer();
- document.getElementById('score').textContent=Math.floor(score).toLocaleString('it-IT');
- document.getElementById('dist').textContent=Math.floor(dist)+' m';
- document.getElementById('crystals').textContent=cr;
- requestAnimationFrame(loop);
+ renderer.render(scene,camera);
 }
 </script>
-</body>
-</html>
+</body></html>
