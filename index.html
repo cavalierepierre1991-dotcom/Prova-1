@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sky Rush V3</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#8bc9e8;font-family:Arial,sans-serif;touch-action:none}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#ui{position:fixed;inset:0;color:#fff;text-shadow:0 2px 5px #000;pointer-events:none}
+.top{position:absolute;top:14px;left:16px;right:16px;display:flex;justify-content:space-between}.score{font-size:40px;font-weight:800}.label{font-size:12px;opacity:.85}.right{text-align:right}.right b{font-size:24px}
+.progress{position:absolute;top:18px;left:32%;width:36%;height:9px;border:1px solid #fff;border-radius:8px;background:#12384a88;overflow:hidden}.progress i{display:block;width:65%;height:100%;background:#62ddff}
+.pause{pointer-events:auto;position:absolute;right:15px;top:62px;border:1px solid #fff;border-radius:50%;width:48px;height:48px;background:#16354acc;color:#fff;font-size:19px}
+.joy{pointer-events:auto;position:absolute;left:18px;bottom:20px;width:145px;height:145px;border:1px solid #fff8;border-radius:50%;background:#09203455}.knob{position:absolute;left:47px;top:47px;width:51px;height:51px;border-radius:50%;background:#eafaffaa;border:1px solid #fff}.jt{position:absolute;inset:0;text-align:center;line-height:48px;color:#fff}.jt strong{font-size:26px}
+.ability,.boost,.shield{pointer-events:auto;position:absolute;border-radius:50%;background:#082a43dd;color:#fff;border:1px solid #a8ecff}.boost{right:22px;bottom:210px;width:62px;height:62px;font-size:25px}.ability{right:20px;bottom:88px;width:88px;height:88px;font-size:35px;border:2px solid #74dcff;box-shadow:0 0 28px #28caff66}.shield{right:36px;bottom:20px;width:55px;height:55px;font-size:24px}
+#start{position:fixed;inset:0;z-index:4;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;background:linear-gradient(#285d7dcc,#07131fee)}#start h1{font-size:58px;letter-spacing:4px;margin:0;text-shadow:0 0 25px #4ee0ff}.sub{color:#63ddff;letter-spacing:6px;margin-top:5px}.play{margin-top:30px;padding:17px 55px;border-radius:12px;background:#0a5377;color:#fff;border:1px solid #b5f1ff;font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="start"><h1>SKY RUSH</h1><div class="sub">V3 — DEMO ULTIMATE</div><div style="margin-top:12px;opacity:.8">SIMULAZIONE DEL GIOCO FUTURO</div><button class="play" id="play">GIOCA</button></div>
+<div id="ui" style="display:none">
+<div class="top"><div><div class="score" id="score">0</div><div class="label">PUNTEGGIO</div><div style="margin-top:10px">💎 120 &nbsp; 🪙 35</div></div><div class="right">VELOCITÀ<br><b id="speed">245</b> km/h<br><span class="label">DISTANZA <b id="dist">0.00</b> km</span></div></div>
+<div class="progress"><i id="prog"></i></div><button class="pause" id="pause">Ⅱ</button>
+<div class="joy" id="joy"><div class="jt">▲<br><strong>◀ ● ▶</strong><br>▼</div><div class="knob" id="knob"></div></div>
+<button class="boost" id="boost">▲</button><button class="ability" id="ability">🪽</button><button class="shield">◇</button>
+</div>
+<script>
+(function(){
+const c=document.getElementById('c'),ctx=c.getContext('2d');let W=0,H=0,dpr=1,playing=false,paused=false,time=0,score=0,dist=0,b=false,jx=0,jy=0;
+let px=0,py=0;
+const islands=[];
+for(let i=0;i<30;i++) islands.push({x:(Math.random()*2-1)*1.8,z:i/30*1.15+.03,s:20+Math.random()*42});
+function resize(){dpr=Math.min(window.devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;c.style.width=W+'px';c.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}resize();addEventListener('resize',resize);
+function project(x,y,z){let q=1+z*3.5;return [W/2+(x-px)*W*.62/q,H*.51+(y-py)*H*.52/q+z*H*.31,q]}
+function draw(){
+let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#4a9dca');g.addColorStop(.48,'#c6e8f1');g.addColorStop(1,'#356676');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+let sun=ctx.createRadialGradient(W*.8,H*.17,2,W*.8,H*.17,180);sun.addColorStop(0,'#fff9dc');sun.addColorStop(1,'#fff9dc00');ctx.fillStyle=sun;ctx.fillRect(0,0,W,H);
+for(let i=0;i<14;i++){let cx=(i*181+time*.008)%(W+260)-130,cy=70+(i*53)%220;ctx.fillStyle='#fff4';ctx.beginPath();ctx.ellipse(cx,cy,70,15,0,0,Math.PI*2);ctx.fill()}
+for(let n=islands.length-1;n>=0;n--){let a=islands[n],z=(a.z+time*.000025)%1.18,p=project(a.x,0,z),s=a.s/p[2];if(s<1)continue;
+ctx.fillStyle='#2b4e50';ctx.beginPath();ctx.moveTo(p[0]-s,p[1]);ctx.lineTo(p[0]-s*.42,p[1]-s*.9);ctx.lineTo(p[0],p[1]-s*1.2);ctx.lineTo(p[0]+s*.45,p[1]-s*.7);ctx.lineTo(p[0]+s,p[1]);ctx.closePath();ctx.fill();
+ctx.fillStyle='#6f9d69';ctx.beginPath();ctx.ellipse(p[0],p[1],s*.8,s*.22,0,0,Math.PI*2);ctx.fill();
+for(let j=-1;j<=1;j++){ctx.fillStyle='#235844';ctx.beginPath();ctx.moveTo(p[0]+j*s*.3,p[1]-s*.1);ctx.lineTo(p[0]+j*s*.3-s*.08,p[1]+s*.25);ctx.lineTo(p[0]+j*s*.3+s*.08,p[1]+s*.25);ctx.closePath();ctx.fill()}}
+for(let i=0;i<12;i++){let z=(i/12+time*.000035)%1.1,p=project(i%2?-.72:.72,-.15,z),s=7/p[2];ctx.fillStyle='#68e4ff';ctx.globalAlpha=.65;ctx.beginPath();ctx.moveTo(p[0],p[1]-s*2);ctx.lineTo(p[0]+s,p[1]);ctx.lineTo(p[0],p[1]+s*2);ctx.lineTo(p[0]-s,p[1]);ctx.closePath();ctx.fill()}ctx.globalAlpha=1;
+let cx=W/2,cy=H*.52;ctx.save();ctx.translate(cx,cy);ctx.rotate(-jx*.13);let sc=Math.max(.72,Math.min(1.2,H/850));ctx.scale(sc,sc);
+ctx.fillStyle='#17283d';ctx.beginPath();ctx.moveTo(-10,5);ctx.lineTo(-105,58);ctx.lineTo(-55,2);ctx.lineTo(-78,-30);ctx.lineTo(-8,-5);ctx.closePath();ctx.fill();
+ctx.fillStyle='#83e8ff';ctx.shadowColor='#37d8ff';ctx.shadowBlur=18;ctx.beginPath();ctx.moveTo(-8,-7);ctx.lineTo(-108,-47);ctx.lineTo(-20,4);ctx.closePath();ctx.fill();ctx.beginPath();ctx.moveTo(8,-7);ctx.lineTo(108,-47);ctx.lineTo(20,4);ctx.closePath();ctx.fill();ctx.shadowBlur=0;
+ctx.fillStyle='#263e54';ctx.beginPath();ctx.ellipse(0,0,15,31,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d29a78';ctx.beginPath();ctx.arc(0,-29,14,0,Math.PI*2);ctx.fill();ctx.fillStyle='#17293b';ctx.beginPath();ctx.arc(0,-34,15,Math.PI,Math.PI*2);ctx.fill();ctx.restore();
+}
+function frame(){requestAnimationFrame(frame);if(playing&&!paused){time+=16;let v=b?2.3:1;score+=Math.round(v*2);dist+=v*.0008;px=(px+jx*.008)*.992;py=(py-jy*.006)*.992;document.getElementById('score').textContent=score.toLocaleString('it-IT');document.getElementById('speed').textContent=b?'420':'245';document.getElementById('dist').textContent=dist.toFixed(2);document.getElementById('prog').style.width=(60+Math.sin(time*.001)*9)+'%'}draw()}frame();
+document.getElementById('play').onclick=function(){playing=true;document.getElementById('start').style.display='none';document.getElementById('ui').style.display='block'};
+document.getElementById('pause').onclick=function(){paused=!paused};
+document.getElementById('ability').onpointerdown=function(){b=true;setTimeout(function(){b=false},900)};
+document.getElementById('boost').onpointerdown=function(){b=true};document.getElementById('boost').onpointerup=function(){b=false};
+let drag=false,j=document.getElementById('joy'),k=document.getElementById('knob');
+function move(e){let r=j.getBoundingClientRect(),dx=e.clientX-r.left-r.width/2,dy=e.clientY-r.top-r.height/2,m=Math.min(48,Math.hypot(dx,dy)),a=Math.atan2(dy,dx);jx=Math.cos(a)*m/48;jy=Math.sin(a)*m/48;k.style.transform='translate('+jx*45+'px,'+jy*45+'px)'}
+j.onpointerdown=function(e){drag=true;j.setPointerCapture(e.pointerId);move(e)};j.onpointermove=function(e){if(drag)move(e)};j.onpointerup=function(){drag=false;jx=jy=0;k.style.transform='translate(0,0)'};
+})();
+</script>
+</body></html>
